@@ -113,6 +113,7 @@ void Kalman::KalmanFilterUpdate(MonoSLAM *monoslam)
 
   // 5. Calculate P(k+1|k+1)
   P -= W * S * W.transpose();
+    
 
   monoslam->fill_states(x);
   monoslam->fill_covariances(P);

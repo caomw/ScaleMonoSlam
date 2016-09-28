@@ -59,7 +59,7 @@ class Kalman;
 class FeatureAndScore {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
+	
   FeatureAndScore() {score = 0; fp = NULL;}
   FeatureAndScore(double s, Feature *f) {score = s; fp = f;}
   double  score;
@@ -216,6 +216,11 @@ class MonoSLAM {
   const double  kNoSigma_;
   const double  kCorrThresh2_;
   const double  kCorrelationSigmaThreshold_;
+	double resc = 0;
+	double scale = 1;
+	int scale_indexes[9] = {0, 1, 2, 7, 8, 9, 10, 11, 12};
+
+
 };
 
 } // namespace SceneLib2

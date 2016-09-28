@@ -42,6 +42,7 @@
 #include "improc/improc.h"
 #include "improc/search_multiple_overlapping_ellipses.h"
 
+
 namespace SceneLib2 {
 
 MonoSLAM::MonoSLAM() :
@@ -107,6 +108,9 @@ MonoSLAM::~MonoSLAM()
 //  - Update the partially-initialised features
 bool MonoSLAM::GoOneStep(cv::Mat frame, bool save_trajectory, bool enable_mapping)
 {
+	cout << "rescale?";
+	cin>>resc;
+	
   location_selected_flag_ = false;  // Equivalent to robot->nullify_image_selection()
   init_feature_search_region_defined_flag_ = false;
 
@@ -121,10 +125,15 @@ bool MonoSLAM::GoOneStep(cv::Mat frame, bool save_trajectory, bool enable_mappin
 
   Eigen::Vector3d prev_xp_pos;
   prev_xp_pos << motion_model_->xpRES_(0),motion_model_->xpRES_(1),motion_model_->xpRES_(2);
-
+	if(resc){
+		prev_xp_pos *= resc;
+		scale *= resc;
+	}
+	
   // Prediction step
   kalman_->KalmanFilterPredict(this, u);
-
+	
+	motion_model_->func_xp(xv_);
   number_of_visible_features_ = auto_select_n_features(kNumberOfFeaturesToSelect_);
 
   if (selected_feature_list_.size() != 0) {
@@ -577,12 +586,58 @@ void MonoSLAM::fill_states(const Eigen::VectorXd &V)
 
   xv_ = VectorExtract(V, y_position, motion_model_->kStateSize_);
   y_position += motion_model_->kStateSize_;
+    
+	cout<<"XV: "<<endl;
+	for (int i=0; i<motion_model_->kStateSize_; ++i) {
+		cout<<xv_(i)<<endl;
+	}
+	
 
-  for (vector<Feature *>::iterator it = feature_list_.begin();
-       it != feature_list_.end() && y_position < V.size(); ++it) {
-    (*it)->y_ = VectorExtract(V, y_position, (*it)->feature_model_->kFeatureStateSize_);
-    y_position += (*it)->feature_model_->kFeatureStateSize_;
-  }
+	if(resc){
+		for(int i = 0; i < 9; i++)
+			xv_(scale_indexes[i]) *= resc;
+
+		
+		for (vector<Feature *>::iterator it = feature_list_.begin();
+				 it != feature_list_.end() && y_position < V.size(); ++it) {
+			
+		for (int i=0; i<3; ++i) {
+			(*it)->y_(i) *= resc;
+		}
+			
+			cout<<(*it)-> xp_org_.size()<<endl;
+			for(int i = 0; i < 3; i++)
+				(*it)-> xp_org_(i) *= resc;
+			
+			
+			if(feature_init_info_vector_.size() != 0){
+				for(int i=0; i<feature_init_info_vector_[0].particle_vector_.size(); i++)
+					feature_init_info_vector_[0].particle_vector_[i].lambda_(0) *= resc;
+			}
+			y_position += (*it)->feature_model_->kFeatureStateSize_;
+		}
+	}
+	
+	
+	int count = 0;
+	
+	for (vector<Feature *>::iterator it = feature_list_.begin();
+			 it != feature_list_.end() && y_position < V.size(); ++it) {
+		(*it)->y_ = VectorExtract(V, y_position, (*it)->feature_model_->kFeatureStateSize_);
+		cout<<"Y_: feature "<<count<<endl;
+		for (int i=0; i<(*it)->feature_model_->kFeatureStateSize_; ++i) {
+			cout<<(*it)->y_(i)<<endl;
+		}
+		count++;
+		
+		if(feature_init_info_vector_.size() != 0){
+			cout<<feature_init_info_vector_[0].particle_vector_.size()<<endl;
+			for(int i=0; i<feature_init_info_vector_[0].particle_vector_.size(); i++)
+				cout<< feature_init_info_vector_[0].particle_vector_[i].lambda_(0)<<"  ";
+			cout<<endl;
+		}
+		y_position += (*it)->feature_model_->kFeatureStateSize_;
+	}
 }
 
 void MonoSLAM::fill_covariances(const Eigen::MatrixXd &M)
@@ -611,6 +666,74 @@ void MonoSLAM::fill_covariances(const Eigen::MatrixXd &M)
 
     x_position += (*it)->feature_model_->kFeatureStateSize_;
   }
+	
+    
+	if(resc){
+		
+		for(int i = 0; i < 9; i++){
+			for(int j = 0; j< Pxx_.cols(); j++)
+				Pxx_(scale_indexes[i], j) *= resc;
+		}
+		
+		for(int i = 0; i < 9; i++){
+			for(int j = 0; j< Pxx_.rows(); j++)
+				Pxx_(j, scale_indexes[i]) *= resc;
+		}
+		
+		
+		int x_position = motion_model_->kStateSize_;
+		
+		for (vector<Feature *>::iterator it = feature_list_.begin();
+				 it != feature_list_.end() && x_position < M.cols(); ++it) {
+			
+			int y_position = 0;
+			
+			for(int i = 0; i < 9; i++){
+				for(int j = 0; j< (*it)->Pxy_.cols(); j++)
+					(*it)->Pxy_(scale_indexes[i], j) *= resc;
+			}
+			
+			for(int i = 0; i < (*it)->Pxy_.rows(); i++){
+				for(int j = 0; j< 3; j++)
+					(*it)->Pxy_(i, j) *= resc;
+			}
+			
+			cout<<"cols rows"<<endl;
+			cout<<(*it)->Pxy_.cols()<<endl;
+			cout<<(*it)->Pxy_.rows()<<endl;
+			
+			y_position += motion_model_->kStateSize_;
+			
+			for (vector<Eigen::MatrixXd>::iterator itmat = (*it)->matrix_block_list_.begin();
+					 itmat != (*it)->matrix_block_list_.end(); ++itmat) {
+				
+				
+				for(int i = 0; i < 3; i++){
+					for(int j = 0; j< itmat->cols(); j++)
+						(*itmat)(i,j) *= resc;
+				}
+				
+				for(int i = 0; i < 3; i++){
+					for(int j = 0; j< itmat->rows(); j++)
+						(*itmat)(j,i) *= resc;
+				}
+				y_position += itmat->rows();
+			}
+			
+			for(int i = 0; i < 3; i++){
+				for(int j = 0; j< (*it)->Pyy_.cols(); j++)
+					(*it)->Pyy_(i,j) *= resc;
+			}
+			
+			for(int i = 0; i < 3; i++){
+				for(int j = 0; j< (*it)->Pyy_.rows(); j++)
+					(*it)->Pyy_(j,i) *= resc;
+			}
+			
+			x_position += (*it)->feature_model_->kFeatureStateSize_;
+		}
+		resc = 0;
+	}
 }
 
 void MonoSLAM::normalise_state()
@@ -774,7 +897,7 @@ bool MonoSLAM::delete_feature()
   }
 
   vector<Feature *>::iterator it_to_delete;
-
+	
   for (it_to_delete = feature_list_.begin(); it_to_delete != feature_list_.end();
        ++it_to_delete) {
     if ((int)((*it_to_delete)->label_) == marked_feature_label_)
@@ -789,7 +912,7 @@ bool MonoSLAM::delete_feature()
   // subsequent features
   for (vector<Feature *>::iterator it = it_to_delete + 1;
        it != feature_list_.end(); ++it) {
-
+		
     --(*it)->position_in_list_;
     vector<Eigen::MatrixXd>::iterator target = (*it)->matrix_block_list_.begin() + (*it_to_delete)->position_in_list_;
     (*it)->matrix_block_list_.erase(target);

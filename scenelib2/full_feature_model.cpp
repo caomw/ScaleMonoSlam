@@ -178,6 +178,7 @@ double FullFeatureModel::selection_score(const Eigen::MatrixXd &Si)
 void FullFeatureModel::func_hi_and_dhi_by_dxp_and_dhi_by_dyi(const Eigen::VectorXd &yi,
                                                              const Eigen::VectorXd &xp)
 {
+		
   // This function gives relative position of feature: also call this hR
   // (vector from camera to feature in robot frame)
   func_zeroedyi_and_dzeroedyi_by_dxp_and_dzeroedyi_by_dyi(yi, xp);
