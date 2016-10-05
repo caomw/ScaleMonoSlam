@@ -542,6 +542,7 @@ void GraphicTool::DrawAxes()
   r1 << origin_x, origin_y, zmax_;
   DrawLine(r0, r1);
 
+	glDisable(GL_LIGHTING);
   // Draw axes labels
   glRasterPos3f(xmax_, origin_y, origin_z);
   glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 'X');

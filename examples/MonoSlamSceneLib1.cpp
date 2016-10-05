@@ -70,6 +70,12 @@ int main(int argc, char **argv)
                                                                        g_monoslam->camera_->centre_(1),
                                                                        0.00001, 1000),
                                             pangolin::ModelViewLookAt(-0.0, 0.18, -1.4, 0.0, 0.13, 0.0, pangolin::AxisY));
+	
+	
+	
+//	pangolin::OpenGlMatrix view_state_lookat = view_state_3d.GetModelViewMatrix();
+//	cout<<view_state_lookat<<endl;
+//	view_state_3d.SetModelViewMatrix(pangolin::ModelViewLookAt(-0.0, 0.18, -1.4, 0.0, 0.13, 0.0, pangolin::AxisY));
 
   // Add 2 panels, 3D and camera viewers
   pangolin::View  &left_panel1  = pangolin::CreatePanel("left_panel1").SetBounds(0.5, 1.0, 0.0, 0.3);
@@ -121,9 +127,11 @@ int main(int argc, char **argv)
     // (3D Handler requires depth testing to be enabled)
     view_3d.ActivateScissorAndClear(view_state_3d);
 
+		g_monoslam->rescale(g_monoslam->scale);
     g_monoslam->graphic_tool_->Draw3dScene(chk_display_trajectory,
                                            chk_display_3d_features,
                                            chk_display_3d_uncertainties);
+		g_monoslam->rescale(1/g_monoslam->scale);
 
     //=========================================================================
     // GET & PROCESS A NEW FRAME & CAMERA VIEW DISPLAY
@@ -141,6 +149,7 @@ int main(int argc, char **argv)
       ++g_frame_id;
     }
 
+		g_monoslam->rescale(g_monoslam->scale);
     g_monoslam->graphic_tool_->DrawAR(frame.data,
                                       chk_rectify_image_display,
                                       chk_display_trajectory,
@@ -149,6 +158,7 @@ int main(int argc, char **argv)
                                       chk_display_2d_descriptors,
                                       chk_display_2d_search_regions,
                                       chk_display_initialisation);
+		g_monoslam->rescale(1/g_monoslam->scale);
 
     // Save Tracked Images
     if(chk_output_tracked_images && g_next) {

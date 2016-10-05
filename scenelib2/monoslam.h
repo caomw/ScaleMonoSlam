@@ -154,6 +154,7 @@ class MonoSLAM {
       const int erase_partially_init_feature_after_this_many_attempts,
       const int min_number_of_particles);
   void delete_partially_initialised_feature(vector<FeatureInitInfo>::iterator feat);
+	void rescale(double resc);
 
   Camera            *camera_;
   MotionModel       *motion_model_;
@@ -216,7 +217,6 @@ class MonoSLAM {
   const double  kNoSigma_;
   const double  kCorrThresh2_;
   const double  kCorrelationSigmaThreshold_;
-	double resc = 0;
 	double scale = 1;
 	int scale_indexes[9] = {0, 1, 2, 7, 8, 9, 10, 11, 12};
 
